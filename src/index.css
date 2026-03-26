@@ -60,6 +60,32 @@
     @apply border-border;
   }
 
+  /* Global scrollbar styling for a cleaner, theme-matched look */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(142 30% 28%) hsl(220 18% 8% / 0.55);
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: hsl(220 18% 8% / 0.55);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(142 36% 34%), hsl(142 30% 26%));
+    border: 2px solid hsl(220 18% 8% / 0.75);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(142 52% 44%), hsl(142 38% 30%));
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
