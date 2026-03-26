@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Swords, ArrowRight } from "lucide-react";
+import { Swords, ArrowRight, LogIn, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import CursorTrailBackground from "@/components/CursorTrailBackground";
+import RobotBackground from "@/components/RobotBackground";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +60,30 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 z-20">
+        <div className="container mx-auto px-6 py-5 flex justify-end">
+          {user ? (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/profile")}
+              className="h-10 rounded-full border-border/70 bg-background/40 px-4 font-mono text-foreground backdrop-blur-md transition-all hover:bg-background/60 hover:text-foreground hover:border-primary/60 hover:shadow-[0_0_18px_rgba(34,197,94,0.45)]"
+            >
+              <UserCircle2 className="mr-2 h-4 w-4 text-primary" />
+              Profile
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/auth")}
+              className="h-10 rounded-full border-border/70 bg-background/40 px-4 font-mono text-foreground backdrop-blur-md transition-all hover:bg-background/60 hover:text-foreground hover:border-primary/60 hover:shadow-[0_0_18px_rgba(34,197,94,0.45)]"
+            >
+              <LogIn className="mr-2 h-4 w-4 text-primary" />
+              Sign In
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Background */}
       <div className="absolute inset-0">
         <img
@@ -68,6 +94,7 @@ const HeroSection = () => {
           height={1080}
         />
         <div className="absolute inset-0 gradient-arena opacity-80" />
+        <CursorTrailBackground />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute w-full h-px bg-primary/20 animate-scan-line" />
         </div>
@@ -89,13 +116,10 @@ const HeroSection = () => {
           <span className="text-primary text-glow-strong">Arena</span>
         </h1>
 
-        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-12 font-body">
-          Battle your friends in real-time coding challenges. Smart topic
-          matching ensures fair fights based on everyone's skill set.
-        </p>
+        <RobotBackground />
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 mt-2">
           <Button
             size="lg"
             onClick={handleCreateRoom}
