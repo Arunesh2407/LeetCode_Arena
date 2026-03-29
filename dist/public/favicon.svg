@@ -1,3 +1,28 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+	<defs>
+		<linearGradient id="bg" x1="18" y1="18" x2="162" y2="162" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#031425"/>
+			<stop offset="1" stop-color="#0A0620"/>
+		</linearGradient>
+		<linearGradient id="neon" x1="45" y1="40" x2="135" y2="140" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#00FFF7"/>
+			<stop offset="1" stop-color="#6FFFEA"/>
+		</linearGradient>
+		<filter id="glow" x="20" y="18" width="140" height="144" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="3" result="blur"/>
+			<feMerge>
+				<feMergeNode in="blur"/>
+				<feMergeNode in="SourceGraphic"/>
+			</feMerge>
+		</filter>
+	</defs>
+
+	<rect x="6" y="6" width="168" height="168" rx="40" fill="url(#bg)"/>
+	<rect x="6.75" y="6.75" width="166.5" height="166.5" rx="39.25" stroke="#00FFF7" stroke-opacity="0.2" stroke-width="1.5"/>
+
+	<g filter="url(#glow)">
+		<path d="M90 30L136 56V108L90 134L44 108V56L90 30Z" stroke="url(#neon)" stroke-width="9" stroke-linejoin="round"/>
+		<path d="M90 54L115 68V96L90 110L65 96V68L90 54Z" fill="url(#neon)" fill-opacity="0.2" stroke="url(#neon)" stroke-width="6" stroke-linejoin="round"/>
+		<circle cx="90" cy="82" r="7" fill="#00FFF7"/>
+	</g>
 </svg>
