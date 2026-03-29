@@ -1,0 +1,14 @@
+packages:
+  "three": "Required for 3D graphics and scenes"
+  "@types/three": "TypeScript definitions for Three.js"
+  "@react-three/fiber": "React renderer for Three.js"
+  "@react-three/drei": "Useful helpers for React Three Fiber"
+  "@react-three/postprocessing": "Post-processing effects (bloom, glitch) for cyberpunk aesthetic"
+  "framer-motion": "Complex animations and interactions for UI elements"
+  "recharts": "Data visualization for user profile statistics"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to safely merge tailwind classes"
+
+notes:
+  - This application is purely frontend-driven with mock data for demonstrating the UI capabilities.
+  - Relies heavily on WebGL and CSS features for the visual effects.

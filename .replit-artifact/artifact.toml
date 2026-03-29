@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "LeetCode Arena"
+version = "1.0.0"
+id = "artifacts/leetcode-arena"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23700
+
+[services.development]
+run = "pnpm --filter @workspace/leetcode-arena run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/leetcode-arena", "run", "build" ]
+publicDir = "artifacts/leetcode-arena/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23700"
+BASE_PATH = "/"
