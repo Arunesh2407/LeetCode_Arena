@@ -1,11 +1,19 @@
-import React from 'react';
-import { Link, useLocation } from 'wouter';
-import { motion } from 'framer-motion';
-import { Hexagon, Loader2, LogIn, LogOut, TerminalSquare, Trophy, UserCircle } from 'lucide-react';
-import { GlobalScene } from './3d/GlobalScene';
-import { AuthModal } from '@/components/auth/AuthModal';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { CustomCursor } from '@/components/ui/CustomCursor';
+import React from "react";
+import { Link, useLocation } from "wouter";
+import { motion } from "framer-motion";
+import {
+  Hexagon,
+  Loader2,
+  LogIn,
+  LogOut,
+  TerminalSquare,
+  Trophy,
+  UserCircle,
+} from "lucide-react";
+import { GlobalScene } from "./3d/GlobalScene";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CustomCursor } from "@/components/ui/CustomCursor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +21,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { path: '/', label: 'NEXUS', icon: Hexagon },
-  { path: '/problems', label: 'TERMINAL', icon: TerminalSquare },
-  { path: '/leaderboard', label: 'RANKS', icon: Trophy },
-  { path: '/profile', label: 'ENTITY', icon: UserCircle },
+  { path: "/", label: "NEXUS", icon: Hexagon },
+  { path: "/problems", label: "TERMINAL", icon: TerminalSquare },
+  { path: "/leaderboard", label: "RANKS", icon: Trophy },
+  { path: "/profile", label: "ENTITY", icon: UserCircle },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -32,64 +40,104 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const displayName =
     user?.user_metadata?.display_name?.toString() ||
-    user?.email?.split('@')[0] ||
-    'Pilot';
+    user?.email?.split("@")[0] ||
+    "Pilot";
   const initials = displayName.slice(0, 2).toUpperCase();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
-      toast({ title: 'Sign out failed', description: error, variant: 'destructive' });
+      toast({
+        title: "Sign out failed",
+        description: error,
+        variant: "destructive",
+      });
       return;
     }
-    toast({ title: 'Signed out', description: 'Your session has ended.' });
+    toast({ title: "Signed out", description: "Your session has ended." });
   };
 
   return (
-    <div className="min-h-screen text-foreground font-sans flex flex-col selection:bg-primary/30 selection:text-primary" style={{ cursor: 'none' }}>
+    <div
+      className="min-h-screen text-foreground font-sans flex flex-col selection:bg-primary/30 selection:text-primary"
+      style={{ cursor: "none" }}
+    >
       <CustomCursor />
       <GlobalScene />
 
       {/* CRT scanline overlay — covers entire site */}
-      <div className="fixed inset-0 pointer-events-none z-[999]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)',
-        backgroundSize: '100% 4px',
-      }} />
+      <div
+        className="fixed inset-0 pointer-events-none z-[999]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)",
+          backgroundSize: "100% 4px",
+        }}
+      />
 
       {/* Vignette */}
-      <div className="fixed inset-0 pointer-events-none z-[998]" style={{
-        background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)',
-      }} />
+      <div
+        className="fixed inset-0 pointer-events-none z-[998]"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
 
       {/* Animated header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16" style={{
-        background: 'rgba(1,1,15,0.65)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(0,255,247,0)',
-      }}>
+      <header
+        className="fixed top-0 left-0 right-0 z-50 h-16"
+        style={{
+          background: "rgba(1,1,15,0.65)",
+          backdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(0,255,247,0)",
+        }}
+      >
         {/* Animated bottom border */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 h-px"
           style={{
-            background: 'linear-gradient(to right, transparent, #00fff7, #bf00ff, #00fff7, transparent)',
-            backgroundSize: '200% 100%',
+            background:
+              "linear-gradient(to right, transparent, #00fff7, #bf00ff, #00fff7, transparent)",
+            backgroundSize: "200% 100%",
           }}
-          animate={{ backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+          animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
         />
         {/* Corner accents */}
-        <div className="absolute bottom-0 left-0 w-16 h-px" style={{ background: 'rgba(0,255,247,0.8)', boxShadow: '0 0 8px #00fff7' }} />
-        <div className="absolute bottom-0 right-0 w-16 h-px" style={{ background: 'rgba(191,0,255,0.8)', boxShadow: '0 0 8px #bf00ff' }} />
+        <div
+          className="absolute bottom-0 left-0 w-16 h-px"
+          style={{
+            background: "rgba(0,255,247,0.8)",
+            boxShadow: "0 0 8px #00fff7",
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-16 h-px"
+          style={{
+            background: "rgba(191,0,255,0.8)",
+            boxShadow: "0 0 8px #bf00ff",
+          }}
+        />
 
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group outline-none">
             <motion.div
               animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             >
-              <Hexagon className="w-8 h-8 text-primary group-hover:text-accent transition-colors" style={{ filter: 'drop-shadow(0 0 6px #00fff7)' }} />
+              <Hexagon
+                className="w-8 h-8 text-primary group-hover:text-accent transition-colors"
+                style={{ filter: "drop-shadow(0 0 6px #00fff7)" }}
+              />
             </motion.div>
-            <span className="font-display font-bold text-xl tracking-widest" style={{ color: '#00fff7', textShadow: '0 0 10px rgba(0,255,247,0.7)' }}>
+            <span
+              className="font-display font-bold text-xl tracking-widest"
+              style={{
+                color: "#00fff7",
+                textShadow: "0 0 10px rgba(0,255,247,0.7)",
+              }}
+            >
               LC // ARENA
             </span>
           </Link>
@@ -105,9 +153,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     href={item.path}
                     className={cn(
                       "relative px-3 sm:px-4 py-2 font-mono text-sm tracking-wider uppercase transition-all outline-none group flex items-center gap-2",
-                      isActive ? "text-primary" : "text-muted-foreground hover:text-white"
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-white",
                     )}
-                    style={isActive ? { textShadow: '0 0 8px rgba(0,255,247,0.8)' } : {}}
+                    style={
+                      isActive
+                        ? { textShadow: "0 0 8px rgba(0,255,247,0.8)" }
+                        : {}
+                    }
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden md:block">{item.label}</span>
@@ -116,11 +170,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <motion.div
                           layoutId="nav-indicator"
                           className="absolute bottom-0 left-0 right-0 h-0.5"
-                          style={{ background: '#00fff7', boxShadow: '0 0 8px #00fff7, 0 0 16px rgba(0,255,247,0.5)' }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          style={{
+                            background: "#00fff7",
+                            boxShadow:
+                              "0 0 8px #00fff7, 0 0 16px rgba(0,255,247,0.5)",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
                         />
                         {/* Active item glow bg */}
-                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,255,247,0.05)', borderRadius: 2 }} />
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            background: "rgba(0,255,247,0.05)",
+                            borderRadius: 2,
+                          }}
+                        />
                       </>
                     )}
                   </Link>
@@ -147,14 +215,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 border-cyan-400/30 bg-black/95 font-mono">
-                  <DropdownMenuLabel className="truncate text-cyan-300">{displayName}</DropdownMenuLabel>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-52 border-cyan-400/30 bg-black/95 font-mono"
+                >
+                  <DropdownMenuLabel className="truncate text-cyan-300">
+                    {displayName}
+                  </DropdownMenuLabel>
                   <DropdownMenuLabel className="truncate pt-0 text-xs text-muted-foreground">
                     {user.email}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer">Profile</Link>
+                    <Link href="/profile" className="cursor-pointer">
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="cursor-pointer text-red-300 focus:bg-red-950/50 focus:text-red-200"
@@ -185,7 +260,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
           className="h-full"
         >
           {children}

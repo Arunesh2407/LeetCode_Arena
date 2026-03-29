@@ -58,18 +58,29 @@ export function AuthModal() {
       if (mode === "signin") {
         const { error } = await signInWithEmail(email, password);
         if (error) {
-          toast({ title: "Sign in failed", description: error, variant: "destructive" });
+          toast({
+            title: "Sign in failed",
+            description: error,
+            variant: "destructive",
+          });
           return;
         }
 
-        toast({ title: "Welcome back", description: "Authentication successful." });
+        toast({
+          title: "Welcome back",
+          description: "Authentication successful.",
+        });
         onOpenChange(false);
         return;
       }
 
       const { error } = await signUpWithEmail(email, password, displayName);
       if (error) {
-        toast({ title: "Sign up failed", description: error, variant: "destructive" });
+        toast({
+          title: "Sign up failed",
+          description: error,
+          variant: "destructive",
+        });
         return;
       }
 
@@ -87,7 +98,11 @@ export function AuthModal() {
     setLoading(true);
     const { error } = await signInWithOAuth(provider);
     if (error) {
-      toast({ title: "OAuth failed", description: error, variant: "destructive" });
+      toast({
+        title: "OAuth failed",
+        description: error,
+        variant: "destructive",
+      });
       setLoading(false);
       return;
     }
@@ -105,7 +120,10 @@ export function AuthModal() {
           <DialogTitle className="font-mono text-2xl tracking-widest text-cyan-300">
             {mode === "signin" ? "SIGN IN" : "CREATE ACCOUNT"}
           </DialogTitle>
-          <DialogDescription id="auth-modal-description" className="font-mono text-xs">
+          <DialogDescription
+            id="auth-modal-description"
+            className="font-mono text-xs"
+          >
             {subtitle}
           </DialogDescription>
         </DialogHeader>
@@ -113,7 +131,10 @@ export function AuthModal() {
         <form className="space-y-3" onSubmit={handleSubmit}>
           {mode === "signup" && (
             <div className="space-y-1">
-              <label className="text-xs font-mono text-cyan-300/70" htmlFor="displayName">
+              <label
+                className="text-xs font-mono text-cyan-300/70"
+                htmlFor="displayName"
+              >
                 Display Name
               </label>
               <Input
@@ -127,7 +148,10 @@ export function AuthModal() {
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-xs font-mono text-cyan-300/70" htmlFor="email">
+            <label
+              className="text-xs font-mono text-cyan-300/70"
+              htmlFor="email"
+            >
               Email
             </label>
             <Input
@@ -141,7 +165,10 @@ export function AuthModal() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-mono text-cyan-300/70" htmlFor="password">
+            <label
+              className="text-xs font-mono text-cyan-300/70"
+              htmlFor="password"
+            >
               Password
             </label>
             <Input
@@ -155,8 +182,16 @@ export function AuthModal() {
               className="border-cyan-400/30 bg-black/40 font-mono"
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full font-mono tracking-widest">
-            {loading ? "PROCESSING..." : mode === "signin" ? "SIGN IN" : "SIGN UP"}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full font-mono tracking-widest"
+          >
+            {loading
+              ? "PROCESSING..."
+              : mode === "signin"
+                ? "SIGN IN"
+                : "SIGN UP"}
           </Button>
         </form>
 
@@ -165,7 +200,9 @@ export function AuthModal() {
             <span className="w-full border-t border-cyan-400/20" />
           </div>
           <div className="relative flex justify-center text-[10px] uppercase">
-            <span className="bg-black px-2 font-mono text-muted-foreground">or continue with</span>
+            <span className="bg-black px-2 font-mono text-muted-foreground">
+              or continue with
+            </span>
           </div>
         </div>
 
@@ -204,13 +241,19 @@ export function AuthModal() {
 
         <div className="flex items-center justify-between border-t border-cyan-400/20 pt-3 text-xs font-mono">
           <span className="inline-flex items-center gap-1 text-muted-foreground">
-            {mode === "signin" ? <Shield className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
+            {mode === "signin" ? (
+              <Shield className="h-3 w-3" />
+            ) : (
+              <UserRound className="h-3 w-3" />
+            )}
             {mode === "signin" ? "Need an account?" : "Already registered?"}
           </span>
           <button
             type="button"
             className="text-cyan-300 transition-colors hover:text-cyan-100"
-            onClick={() => setMode((prev) => (prev === "signin" ? "signup" : "signin"))}
+            onClick={() =>
+              setMode((prev) => (prev === "signin" ? "signup" : "signin"))
+            }
           >
             {mode === "signin" ? "Sign up" : "Sign in"}
           </button>

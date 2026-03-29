@@ -13,13 +13,18 @@ interface AuthContextValue {
   authModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithEmail: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: string | null }>;
   signUpWithEmail: (
     email: string,
     password: string,
-    displayName?: string
+    displayName?: string,
   ) => Promise<{ error: string | null }>;
-  signInWithOAuth: (provider: OAuthProvider) => Promise<{ error: string | null }>;
+  signInWithOAuth: (
+    provider: OAuthProvider,
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
 }
 
@@ -64,11 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       openAuthModal: () => setAuthModalOpen(true),
       closeAuthModal: () => setAuthModalOpen(false),
       signInWithEmail: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         return { error: error?.message ?? null };
       },
       signUpWithEmail: async (email, password, displayName) => {
-        const metadata = displayName ? { display_name: displayName } : undefined;
+        const metadata = displayName
+          ? { display_name: displayName }
+          : undefined;
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -90,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? null };
       },
     }),
-    [authModalOpen, loading, session, user]
+    [authModalOpen, loading, session, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
