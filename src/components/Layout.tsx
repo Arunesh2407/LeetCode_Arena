@@ -1,24 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
+  Activity,
+  DoorOpen,
   Hexagon,
   Loader2,
   LogIn,
   LogOut,
+  Moon,
+  Settings2,
+  Sun,
   TerminalSquare,
   Trophy,
-  UserCircle,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { GlobalScene } from "./3d/GlobalScene";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -27,22 +35,53 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
+  { path: "/join-room", label: "JOIN ROOM", icon: DoorOpen },
+  { path: "/leaderboard", label: "LEADERBOARD", icon: Trophy },
+  { path: "/pulse", label: "PULSE", icon: Activity },
+  { path: "/problems", label: "PROBLEMS", icon: TerminalSquare },
+];
+
+const SIGNED_OUT_NAV_ITEMS = [
   { path: "/", label: "NEXUS", icon: Hexagon },
+  { path: "/", label: "JOIN ROOM", icon: DoorOpen },
+  { path: "/leaderboard", label: "LEADERBOARD", icon: Trophy },
   { path: "/problems", label: "TERMINAL", icon: TerminalSquare },
-  { path: "/leaderboard", label: "RANKS", icon: Trophy },
-  { path: "/profile", label: "ENTITY", icon: UserCircle },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, loading, openAuthModal, signOut } = useAuth();
   const { toast } = useToast();
+  const { theme = "system", setTheme } = useTheme();
+  const [compactHud, setCompactHud] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("arena.config.compactHud") === "true";
+  });
+  const [reducedFx, setReducedFx] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("arena.config.reducedFx") === "true";
+  });
 
   const displayName =
     user?.user_metadata?.display_name?.toString() ||
     user?.email?.split("@")[0] ||
     "Pilot";
   const initials = displayName.slice(0, 2).toUpperCase();
+  const navItems = user ? NAV_ITEMS : SIGNED_OUT_NAV_ITEMS;
+
+  useEffect(() => {
+    localStorage.setItem("arena.config.compactHud", String(compactHud));
+    document.documentElement.dataset.arenaCompactHud = compactHud
+      ? "enabled"
+      : "disabled";
+  }, [compactHud]);
+
+  useEffect(() => {
+    localStorage.setItem("arena.config.reducedFx", String(reducedFx));
+    document.documentElement.dataset.arenaReducedFx = reducedFx
+      ? "enabled"
+      : "disabled";
+  }, [reducedFx]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -144,7 +183,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <nav className="flex gap-1 sm:gap-2">
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const isActive = location === item.path;
                 const Icon = item.icon;
                 return (
@@ -217,7 +256,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-52 border-cyan-400/30 bg-black/95 font-mono"
+                  className="w-60 border-cyan-400/30 bg-black/95 font-mono"
                 >
                   <DropdownMenuLabel className="truncate text-cyan-300">
                     {displayName}
@@ -231,6 +270,52 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       Profile
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-cyan-300/80 flex items-center gap-2">
+                    <Settings2 className="h-3.5 w-3.5" /> Arena Config
+                  </DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={compactHud}
+                    onCheckedChange={(checked) =>
+                      setCompactHud(Boolean(checked))
+                    }
+                    className="text-xs"
+                  >
+                    Compact HUD
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={reducedFx}
+                    onCheckedChange={(checked) =>
+                      setReducedFx(Boolean(checked))
+                    }
+                    className="text-xs"
+                  >
+                    Reduced FX
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-cyan-300/80">
+                    Theme
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={theme}
+                    onValueChange={(value) => setTheme(value)}
+                  >
+                    <DropdownMenuRadioItem value="system" className="text-xs">
+                      System
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      value="dark"
+                      className="text-xs flex items-center gap-2"
+                    >
+                      <Moon className="h-3.5 w-3.5" /> Dark
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem
+                      value="light"
+                      className="text-xs flex items-center gap-2"
+                    >
+                      <Sun className="h-3.5 w-3.5" /> Light
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
                   <DropdownMenuItem
                     className="cursor-pointer text-red-300 focus:bg-red-950/50 focus:text-red-200"
                     onClick={() => void handleSignOut()}

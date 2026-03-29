@@ -542,22 +542,7 @@ export default function Home() {
           />
 
           {/* Main hero content */}
-          <div className="relative z-10 flex flex-col items-center text-center space-y-6 px-4 max-w-5xl">
-            <ParallaxLayer depth={-10}>
-              <motion.div
-                className="inline-block px-4 py-1.5 font-mono text-xs tracking-widest rounded-sm"
-                style={{
-                  border: "1px solid rgba(0,255,247,0.35)",
-                  color: "#00fff7",
-                  background: "rgba(0,255,247,0.05)",
-                }}
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-              >
-                SYSTEM ONLINE // PROTOCOL V2.4 // NODE: US-EAST-04
-              </motion.div>
-            </ParallaxLayer>
-
+          <div className="relative z-10 flex flex-col items-center text-center space-y-5 px-4 max-w-5xl -translate-y-6 md:-translate-y-8">
             <ParallaxLayer depth={-25}>
               <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-black tracking-tighter leading-none">
                 <GlitchText

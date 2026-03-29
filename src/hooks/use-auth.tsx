@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigError } from "@/integrations/supabase/client";
 
 type OAuthProvider = "google" | "github" | "discord";
 
@@ -69,6 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       openAuthModal: () => setAuthModalOpen(true),
       closeAuthModal: () => setAuthModalOpen(false),
       signInWithEmail: async (email, password) => {
+        if (supabaseConfigError) {
+          return { error: supabaseConfigError };
+        }
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -76,6 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? null };
       },
       signUpWithEmail: async (email, password, displayName) => {
+        if (supabaseConfigError) {
+          return { error: supabaseConfigError };
+        }
         const metadata = displayName
           ? { display_name: displayName }
           : undefined;
@@ -87,15 +93,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? null };
       },
       signInWithOAuth: async (provider) => {
+        if (supabaseConfigError) {
+          return { error: supabaseConfigError };
+        }
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {
-            redirectTo: window.location.href,
+            redirectTo: `${window.location.origin}/`,
           },
         });
         return { error: error?.message ?? null };
       },
       signOut: async () => {
+        if (supabaseConfigError) {
+          return { error: supabaseConfigError };
+        }
         const { error } = await supabase.auth.signOut();
         return { error: error?.message ?? null };
       },

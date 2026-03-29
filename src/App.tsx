@@ -6,9 +6,11 @@ import { AuthProvider } from "@/hooks/use-auth";
 
 import { Layout } from "@/components/Layout";
 import Home from "@/pages/Home";
+import JoinRoom from "./pages/JoinRoom";
 import Problems from "@/pages/Problems";
 import Arena from "@/pages/Arena";
 import Leaderboard from "@/pages/Leaderboard";
+import Pulse from "./pages/Pulse";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
@@ -19,6 +21,8 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/join-room" component={JoinRoom} />
+        <Route path="/pulse" component={Pulse} />
         <Route path="/problems" component={Problems} />
         <Route path="/arena/:id" component={Arena} />
         <Route path="/leaderboard" component={Leaderboard} />

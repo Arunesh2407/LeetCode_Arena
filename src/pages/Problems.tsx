@@ -1,35 +1,53 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'wouter';
-import { Search, Terminal } from 'lucide-react';
-import { useProblems, Difficulty, Problem } from '@/hooks/use-arena-data';
-import { CyberBadge } from '@/components/ui/CyberBadge';
-import { Tilt3DCard } from '@/components/ui/Tilt3DCard';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
+import { Layers3, Search, Terminal } from "lucide-react";
+import {
+  useRoomProblemGroups,
+  Difficulty,
+  Problem,
+} from "@/hooks/use-arena-data";
+import { CyberBadge } from "@/components/ui/CyberBadge";
+import { Tilt3DCard } from "@/components/ui/Tilt3DCard";
 
 const DIFF_GLOW: Record<string, string> = {
-  EASY: '#22c55e',
-  MEDIUM: '#eab308',
-  HARD: '#ef4444',
-  INSANE: '#bf00ff',
+  EASY: "#22c55e",
+  MEDIUM: "#eab308",
+  HARD: "#ef4444",
+  INSANE: "#bf00ff",
 };
 
-function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function ScrollReveal({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   const [visible, setVisible] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 30, rotateX: 20 }}
       whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.5, delay, ease: 'easeOut' }}
-      style={{ transformStyle: 'preserve-3d' }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      style={{ transformStyle: "preserve-3d" }}
     >
       {children}
     </motion.div>
   );
 }
 
-function ProblemCard({ problem, idx, onClick }: { problem: Problem; idx: number; onClick: () => void }) {
-  const glowColor = DIFF_GLOW[problem.difficulty] || '#00fff7';
+function ProblemCard({
+  problem,
+  idx,
+  onClick,
+}: {
+  problem: Problem;
+  idx: number;
+  onClick: () => void;
+}) {
+  const glowColor = DIFF_GLOW[problem.difficulty] || "#00fff7";
 
   return (
     <ScrollReveal delay={idx * 0.06}>
@@ -39,11 +57,19 @@ function ProblemCard({ problem, idx, onClick }: { problem: Problem; idx: number;
         glowColor={glowColor}
         intensity={12}
       >
-        <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{ backgroundImage: 'linear-gradient(to right, #808080 1px, transparent 1px), linear-gradient(to bottom, #808080 1px, transparent 1px)', backgroundSize: '14px 24px' }} />
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #808080 1px, transparent 1px), linear-gradient(to bottom, #808080 1px, transparent 1px)",
+            backgroundSize: "14px 24px",
+          }}
+        />
 
         <div className="relative z-10 flex justify-between items-start mb-4">
-          <span className="font-mono text-muted-foreground text-sm">#{problem.id.padStart(4, '0')}</span>
+          <span className="font-mono text-muted-foreground text-sm">
+            #{problem.id.padStart(4, "0")}
+          </span>
           <CyberBadge difficulty={problem.difficulty} />
         </div>
 
@@ -52,17 +78,25 @@ function ProblemCard({ problem, idx, onClick }: { problem: Problem; idx: number;
         </h3>
 
         <div className="relative z-10 flex flex-wrap gap-2 mb-5">
-          {problem.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="text-xs font-mono text-muted-foreground bg-background/50 px-2 py-1 rounded border border-border/50">
+          {problem.tags.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="text-xs font-mono text-muted-foreground bg-background/50 px-2 py-1 rounded border border-border/50"
+            >
               {tag}
             </span>
           ))}
-          {problem.tags.length > 3 && <span className="text-xs font-mono text-muted-foreground px-2 py-1">+{problem.tags.length - 3}</span>}
+          {problem.tags.length > 3 && (
+            <span className="text-xs font-mono text-muted-foreground px-2 py-1">
+              +{problem.tags.length - 3}
+            </span>
+          )}
         </div>
 
         <div className="relative z-10 flex justify-between items-center border-t border-border/30 pt-4">
           <div className="font-mono text-xs text-muted-foreground">
-            Acceptance: <span className="text-white">{problem.acceptance}%</span>
+            Acceptance:{" "}
+            <span className="text-white">{problem.acceptance}%</span>
           </div>
           <motion.div
             className="font-mono text-xs flex items-center gap-1"
@@ -78,33 +112,42 @@ function ProblemCard({ problem, idx, onClick }: { problem: Problem; idx: number;
 }
 
 export default function Problems() {
-  const { data: problems, isLoading } = useProblems();
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<Difficulty | 'ALL'>('ALL');
+  const { data: roomGroups, isLoading } = useRoomProblemGroups();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Difficulty | "ALL">("ALL");
   const [, setLocation] = useLocation();
 
-  const filteredProblems = problems.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
-    const matchesFilter = filter === 'ALL' || p.difficulty === filter;
-    return matchesSearch && matchesFilter;
-  });
+  const filteredGroups = roomGroups
+    .map((group) => ({
+      ...group,
+      problems: group.problems.filter((problem) => {
+        const matchesSearch =
+          problem.title.toLowerCase().includes(search.toLowerCase()) ||
+          problem.tags.some((tag) =>
+            tag.toLowerCase().includes(search.toLowerCase()),
+          );
+        const matchesFilter = filter === "ALL" || problem.difficulty === filter;
+        return matchesSearch && matchesFilter;
+      }),
+    }))
+    .filter((group) => group.problems.length > 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <motion.div
         initial={{ opacity: 0, y: -20, rotateX: -15 }}
         animate={{ opacity: 1, y: 0, rotateX: 0 }}
-        transition={{ duration: 0.6, type: 'spring' }}
-        style={{ transformStyle: 'preserve-3d' }}
+        transition={{ duration: 0.6, type: "spring" }}
+        style={{ transformStyle: "preserve-3d" }}
         className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6"
       >
         <div>
           <h1 className="text-4xl font-bold neon-text-primary uppercase flex items-center gap-3 font-mono">
-            <Terminal className="w-8 h-8" /> Data Nodes
+            <Terminal className="w-8 h-8" /> Room Problems
           </h1>
           <p className="text-muted-foreground font-mono mt-2 border-l-2 border-primary/50 pl-3">
-            Hover a target to feel its depth. Click to infiltrate.
+            Problems are grouped by your joined rooms with variable challenge
+            volume.
           </p>
         </div>
 
@@ -123,16 +166,17 @@ export default function Problems() {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {(['ALL', 'EASY', 'MEDIUM', 'HARD', 'INSANE'] as const).map((d) => (
+            {(["ALL", "EASY", "MEDIUM", "HARD", "INSANE"] as const).map((d) => (
               <motion.button
                 key={d}
                 onClick={() => setFilter(d)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`px-3 py-1 font-mono text-xs border rounded-sm transition-all ${filter === d
-                  ? 'bg-primary/20 border-primary text-primary neon-text-primary'
-                  : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                  }`}
+                className={`px-3 py-1 font-mono text-xs border rounded-sm transition-all ${
+                  filter === d
+                    ? "bg-primary/20 border-primary text-primary neon-text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
               >
                 {d}
               </motion.button>
@@ -146,23 +190,55 @@ export default function Problems() {
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" style={{ perspective: '1200px' }}>
-          <AnimatePresence>
-            {filteredProblems.map((problem, idx) => (
-              <ProblemCard
-                key={problem.id}
-                problem={problem}
-                idx={idx}
-                onClick={() => setLocation(`/arena/${problem.id}`)}
-              />
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="space-y-10" style={{ perspective: "1200px" }}>
+          {filteredGroups.map((group) => (
+            <motion.section
+              key={group.roomId}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl border p-5"
+              style={{
+                borderColor: "rgba(0,255,247,0.2)",
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h2 className="font-mono text-lg text-white flex items-center gap-2 tracking-wide">
+                    <Layers3 className="h-5 w-5 text-cyan-300" />{" "}
+                    {group.roomName}
+                  </h2>
+                  <p className="font-mono text-xs text-muted-foreground mt-1">
+                    Room Code: {group.roomCode} • Active problems:{" "}
+                    {group.problems.length}
+                  </p>
+                </div>
+              </div>
+
+              <motion.div
+                layout
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+              >
+                <AnimatePresence>
+                  {group.problems.map((problem, idx) => (
+                    <ProblemCard
+                      key={`${group.roomId}-${problem.id}`}
+                      problem={problem}
+                      idx={idx}
+                      onClick={() => setLocation(`/arena/${problem.id}`)}
+                    />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </motion.section>
+          ))}
+        </div>
       )}
 
-      {!isLoading && filteredProblems.length === 0 && (
+      {!isLoading && filteredGroups.length === 0 && (
         <div className="text-center py-20 font-mono text-muted-foreground border-2 border-dashed border-border/50 p-8">
-          [ERR 404] NO MATRICES FOUND MATCHING QUERY
+          [ERR 404] NO ROOM PROBLEMS FOUND MATCHING QUERY
         </div>
       )}
     </div>

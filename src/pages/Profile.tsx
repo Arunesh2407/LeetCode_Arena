@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Radar,
@@ -14,12 +15,21 @@ import {
   Cell,
 } from "recharts";
 import { Activity, Shield, Cpu, Network, UserCircle } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/use-arena-data";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Profile() {
   const { data: profile, isLoading } = useProfile();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const [compactHud, setCompactHud] = useState(false);
+  const [reducedFx, setReducedFx] = useState(false);
+
+  useEffect(() => {
+    setCompactHud(localStorage.getItem("arena.config.compactHud") === "true");
+    setReducedFx(localStorage.getItem("arena.config.reducedFx") === "true");
+  }, []);
 
   if (isLoading || !profile)
     return (
@@ -207,6 +217,46 @@ export default function Profile() {
                 />
               ))}
             </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="p-6 rounded-xl"
+            style={{
+              background: "rgba(0,0,0,0.6)",
+              border: "1px solid rgba(191,0,255,0.2)",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <h3 className="font-mono text-xl mb-4 text-white">
+              Arena Config Snapshot
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+              <div className="rounded border border-cyan-400/25 bg-cyan-400/5 p-3">
+                <div className="text-muted-foreground mb-1">Theme</div>
+                <div className="text-cyan-300 uppercase">
+                  {theme || "system"}
+                </div>
+              </div>
+              <div className="rounded border border-cyan-400/25 bg-cyan-400/5 p-3">
+                <div className="text-muted-foreground mb-1">Compact HUD</div>
+                <div className="text-cyan-300">
+                  {compactHud ? "ENABLED" : "DISABLED"}
+                </div>
+              </div>
+              <div className="rounded border border-cyan-400/25 bg-cyan-400/5 p-3">
+                <div className="text-muted-foreground mb-1">Reduced FX</div>
+                <div className="text-cyan-300">
+                  {reducedFx ? "ENABLED" : "DISABLED"}
+                </div>
+              </div>
+            </div>
+            <p className="font-mono text-xs text-muted-foreground mt-3">
+              These values are controlled in the avatar dropdown under Arena
+              Config.
+            </p>
           </motion.div>
         </div>
 
