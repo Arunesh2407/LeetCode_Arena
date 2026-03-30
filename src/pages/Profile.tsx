@@ -42,7 +42,9 @@ export default function Profile() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16">
         <div className="rounded-xl border border-border/60 bg-card/70 p-8 text-center">
-          <h1 className="font-mono text-2xl text-white mb-2">Profile Data Unavailable</h1>
+          <h1 className="font-mono text-2xl text-white mb-2">
+            Profile Data Unavailable
+          </h1>
           <p className="font-mono text-sm text-muted-foreground">
             No preexisting profile stats are loaded.
           </p>

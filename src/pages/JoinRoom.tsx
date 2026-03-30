@@ -125,9 +125,7 @@ export default function JoinRoom() {
   const [code, setCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<"topics" | "list_url">(
-    "topics",
-  );
+  const [createMode, setCreateMode] = useState<"topics" | "list_url">("topics");
   const [roomName, setRoomName] = useState("");
   const [listUrl, setListUrl] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>(["Array"]);
@@ -444,7 +442,8 @@ export default function JoinRoom() {
           ) : (
             <div className="space-y-3">
               {rooms.length === 0 ? (
-                <div className="rounded-lg border px-4 py-6 text-center font-mono text-sm text-muted-foreground"
+                <div
+                  className="rounded-lg border px-4 py-6 text-center font-mono text-sm text-muted-foreground"
                   style={{
                     borderColor: "rgba(0,255,247,0.2)",
                     background: "rgba(2,8,24,0.55)",
@@ -467,8 +466,8 @@ export default function JoinRoom() {
                         {room.name}
                       </div>
                       <div className="font-mono text-xs text-muted-foreground mt-1">
-                        CODE: <MaskedCode code={room.code} /> • MEMBERS: {room.memberCount} •{" "}
-                        {room.status}
+                        CODE: <MaskedCode code={room.code} /> • MEMBERS:{" "}
+                        {room.memberCount} • {room.status}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

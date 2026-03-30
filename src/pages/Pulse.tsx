@@ -93,7 +93,8 @@ export default function Pulse() {
             <div className="w-10 h-10 border-4 border-secondary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : events.length === 0 ? (
-          <div className="rounded-lg border px-4 py-6 text-center font-mono text-sm text-muted-foreground"
+          <div
+            className="rounded-lg border px-4 py-6 text-center font-mono text-sm text-muted-foreground"
             style={{
               borderColor: "rgba(191,0,255,0.18)",
               background: "rgba(7,6,24,0.56)",
