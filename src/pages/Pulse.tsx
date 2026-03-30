@@ -34,6 +34,10 @@ export default function Pulse() {
         <div className="flex justify-center py-12">
           <div className="w-12 h-12 border-4 border-secondary border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : roomPoints.length === 0 ? (
+        <div className="rounded-xl border border-secondary/25 bg-black/45 p-6 text-center font-mono text-sm text-muted-foreground">
+          No room point snapshots available yet.
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {roomPoints.map((room, index) => (
@@ -87,6 +91,15 @@ export default function Pulse() {
         {loadingEvents ? (
           <div className="flex justify-center py-10">
             <div className="w-10 h-10 border-4 border-secondary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : events.length === 0 ? (
+          <div className="rounded-lg border px-4 py-6 text-center font-mono text-sm text-muted-foreground"
+            style={{
+              borderColor: "rgba(191,0,255,0.18)",
+              background: "rgba(7,6,24,0.56)",
+            }}
+          >
+            No live events to display.
           </div>
         ) : (
           <div className="space-y-3">

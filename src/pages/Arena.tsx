@@ -36,10 +36,26 @@ export default function Arena() {
     }, 1500);
   };
 
-  if (isLoading || !problem) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!problem) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center px-4">
+        <div className="max-w-xl w-full rounded-xl border border-border/60 bg-card/70 p-8 text-center">
+          <h2 className="font-mono text-xl text-white mb-2">Problem Not Available</h2>
+          <p className="font-mono text-sm text-muted-foreground mb-6">
+            No preloaded problem data exists for this room yet.
+          </p>
+          <Link href="/problems" className="inline-flex items-center gap-2 font-mono text-cyan-300 hover:text-cyan-100">
+            <ArrowLeft className="w-4 h-4" /> Back to Room Problems
+          </Link>
+        </div>
       </div>
     );
   }

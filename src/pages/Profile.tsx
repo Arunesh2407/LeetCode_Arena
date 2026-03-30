@@ -31,12 +31,25 @@ export default function Profile() {
     setReducedFx(localStorage.getItem("arena.config.reducedFx") === "true");
   }, []);
 
-  if (isLoading || !profile)
+  if (isLoading)
     return (
       <div className="flex justify-center items-center h-64">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
+
+  if (!profile) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="rounded-xl border border-border/60 bg-card/70 p-8 text-center">
+          <h1 className="font-mono text-2xl text-white mb-2">Profile Data Unavailable</h1>
+          <p className="font-mono text-sm text-muted-foreground">
+            No preexisting profile stats are loaded.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const skillData = [
     { subject: "Algorithms", A: 120, fullMark: 150 },

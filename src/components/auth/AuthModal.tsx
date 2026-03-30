@@ -141,7 +141,7 @@ export function AuthModal() {
                 id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="NeoCoder"
+                placeholder="PilotName"
                 required
                 className="border-cyan-400/30 bg-black/40 font-mono"
               />

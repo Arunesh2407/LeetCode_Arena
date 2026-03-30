@@ -35,7 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { path: "/join-room", label: "JOIN ROOM", icon: DoorOpen },
+  { path: "/join-room", label: "ROOMS", icon: DoorOpen },
   { path: "/leaderboard", label: "LEADERBOARD", icon: Trophy },
   { path: "/pulse", label: "PULSE", icon: Activity },
   { path: "/problems", label: "PROBLEMS", icon: TerminalSquare },
@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 
 const SIGNED_OUT_NAV_ITEMS = [
   { path: "/", label: "NEXUS", icon: Hexagon },
-  { path: "/", label: "JOIN ROOM", icon: DoorOpen },
+  { path: "/join-room", label: "ROOMS", icon: DoorOpen },
   { path: "/leaderboard", label: "LEADERBOARD", icon: Trophy },
   { path: "/problems", label: "TERMINAL", icon: TerminalSquare },
 ];

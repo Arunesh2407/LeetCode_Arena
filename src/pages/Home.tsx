@@ -2,11 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useLocation } from "wouter";
 import { NeonButton } from "@/components/ui/NeonButton";
-import { Input } from "@/components/ui/input";
 import { GlitchText } from "@/components/ui/GlitchText";
 import { BootSequence } from "@/components/ui/BootSequence";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 
 function useSmoothedMouse() {
   const mouse = useRef({ x: 0.5, y: 0.5 });
@@ -320,13 +317,10 @@ function CounterStat({
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { user, openAuthModal } = useAuth();
-  const { toast } = useToast();
   const mouse = useSmoothedMouse();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollDim, setScrollDim] = useState(0);
   const [scrollBlur, setScrollBlur] = useState(0);
-  const [roomCode, setRoomCode] = useState("");
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -348,48 +342,6 @@ export default function Home() {
 
   const dx = mouse.x - 0.5,
     dy = mouse.y - 0.5;
-
-  const requireAuth = () => {
-    if (user) return true;
-    toast({
-      title: "Sign in required",
-      description: "Authenticate first to create or join a room.",
-    });
-    openAuthModal();
-    return false;
-  };
-
-  const handleCreateRoom = () => {
-    if (!requireAuth()) return;
-
-    const generatedCode = Math.random().toString(36).slice(2, 8).toUpperCase();
-    setRoomCode(generatedCode);
-    toast({
-      title: "Room created",
-      description: `Room code ${generatedCode} generated. Share it and join.`,
-    });
-    setLocation(`/arena/1?room=${generatedCode}`);
-  };
-
-  const handleJoinRoom = () => {
-    if (!requireAuth()) return;
-
-    const normalized = roomCode.trim().toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(normalized)) {
-      toast({
-        title: "Invalid room code",
-        description: "Use a 6-character alphanumeric room code.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Joining room",
-      description: `Connecting to room ${normalized}.`,
-    });
-    setLocation(`/arena/1?room=${normalized}`);
-  };
 
   const hexagons = [
     {
@@ -603,7 +555,7 @@ export default function Home() {
 
             <ParallaxLayer depth={-6} className="w-full max-w-2xl pt-3">
               <div
-                className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 rounded-sm border p-2"
+                className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 rounded-sm border p-2"
                 style={{
                   borderColor: "rgba(0,255,247,0.25)",
                   background: "rgba(0,0,0,0.5)",
@@ -611,26 +563,20 @@ export default function Home() {
                 }}
               >
                 <NeonButton
-                  onClick={handleCreateRoom}
+                  onClick={() => setLocation("/join-room")}
                   className="px-5 py-3 text-xs sm:text-sm"
                   glow
                 >
-                  CREATE ROOM
+                  ROOMS HUB
                 </NeonButton>
-                <Input
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  placeholder="ENTER CODE"
-                  className="h-full border-cyan-400/35 bg-black/40 text-center font-mono text-sm tracking-[0.35em] placeholder:tracking-[0.25em]"
-                />
+
                 <NeonButton
-                  onClick={handleJoinRoom}
+                  onClick={() => setLocation("/join-room")}
                   className="px-6 py-3 text-xs sm:text-sm"
                   variant="accent"
                   glow
                 >
-                  JOIN
+                  MANAGE ROOMS
                 </NeonButton>
               </div>
             </ParallaxLayer>
