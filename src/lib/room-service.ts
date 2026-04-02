@@ -209,6 +209,24 @@ async function upsertLeetCodeProfileForCurrentUser(
   );
 
   if (error) {
+    const isDuplicateUsernameConflict =
+      error.code === "23505" &&
+      typeof error.message === "string" &&
+      error.message.toLowerCase().includes("username");
+
+    if (isDuplicateUsernameConflict) {
+      console.warn(
+        "Skipped saving LeetCode profile because the username is already linked to another account.",
+        {
+          userId,
+          username: identity.username,
+          message: error.message,
+          details: error.details,
+        },
+      );
+      return;
+    }
+
     throw error;
   }
 }
