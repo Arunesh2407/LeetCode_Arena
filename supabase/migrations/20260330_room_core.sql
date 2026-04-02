@@ -67,13 +67,7 @@ create policy rooms_update_owner on public.rooms
 drop policy if exists members_select_in_room on public.room_members;
 create policy members_select_in_room on public.room_members
   for select to authenticated
-  using (
-    auth.uid() in (
-      select rm.user_id
-      from public.room_members rm
-      where rm.room_id = room_members.room_id
-    )
-  );
+  using (user_id = auth.uid());
 
 drop policy if exists members_insert_self on public.room_members;
 create policy members_insert_self on public.room_members
