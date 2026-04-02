@@ -17,8 +17,9 @@ import { useJoinedRooms } from "@/hooks/use-arena-data";
 import { useToast } from "@/hooks/use-toast";
 import {
   createRoomForCurrentUser,
-  joinRoomByCodeForCurrentUser,
+  joinRoomByCodeForCurrentUserWithProfile,
   validateRoomCode,
+  deleteRoomForCurrentUser,
 } from "@/lib/room-service";
 
 const ROOM_TOPICS = [
@@ -124,13 +125,25 @@ export default function JoinRoom() {
   const [rooms, setRooms] = useState(joinedRooms);
   const [code, setCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const [leetcodeIdentityInput, setLeetcodeIdentityInput] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"topics" | "list_url">("topics");
   const [roomName, setRoomName] = useState("");
   const [listUrl, setListUrl] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>(["Array"]);
+  const [durationType, setDurationType] = useState<
+    "days" | "months" | "unlimited"
+  >("unlimited");
+  const [durationValue, setDurationValue] = useState("30");
+  const [dailyEasyCount, setDailyEasyCount] = useState("0");
+  const [dailyMediumCount, setDailyMediumCount] = useState("1");
+  const [dailyHardCount, setDailyHardCount] = useState("0");
   const [isCreating, setIsCreating] = useState(false);
   const [createdRoomCode, setCreatedRoomCode] = useState("");
+  const [deleteConfirmRoomId, setDeleteConfirmRoomId] = useState<string | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const normalizedCode = useMemo(() => code.trim().toUpperCase(), [code]);
 
@@ -171,7 +184,10 @@ export default function JoinRoom() {
 
     setIsJoining(true);
     try {
-      const room = await joinRoomByCodeForCurrentUser(normalizedCode);
+      const room = await joinRoomByCodeForCurrentUserWithProfile({
+        code: normalizedCode,
+        leetcodeIdentityInput,
+      });
       toast({
         title: "Room linked",
         description: `Connected to ${room.name}.`,
@@ -194,7 +210,7 @@ export default function JoinRoom() {
           ...current,
         ];
       });
-      setLocation(`/arena/1?room=${room.code}`);
+      setLocation(`/problems?room=${room.code}`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not join room.";
@@ -211,6 +227,45 @@ export default function JoinRoom() {
   const handleCreateRoom = async () => {
     if (!requireAuth()) return;
 
+    const easy = Number.parseInt(dailyEasyCount || "0", 10);
+    const medium = Number.parseInt(dailyMediumCount || "0", 10);
+    const hard = Number.parseInt(dailyHardCount || "0", 10);
+    const duration = Number.parseInt(durationValue || "0", 10);
+
+    if (
+      [easy, medium, hard].some((value) => Number.isNaN(value) || value < 0)
+    ) {
+      toast({
+        title: "Invalid daily counts",
+        description:
+          "Daily easy/medium/hard counts must be non-negative numbers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (easy + medium + hard <= 0) {
+      toast({
+        title: "No daily problems configured",
+        description: "Set at least one daily problem in easy, medium, or hard.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      durationType !== "unlimited" &&
+      (Number.isNaN(duration) || duration <= 0)
+    ) {
+      toast({
+        title: "Invalid room duration",
+        description:
+          "Provide a duration value greater than 0 for days or months.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
       const room = await createRoomForCurrentUser({
@@ -218,6 +273,12 @@ export default function JoinRoom() {
         sourceType: createMode,
         listUrl: createMode === "list_url" ? listUrl : undefined,
         topics: createMode === "topics" ? selectedTopics : undefined,
+        leetcodeIdentityInput,
+        durationType,
+        durationValue: durationType === "unlimited" ? null : duration,
+        dailyEasyCount: easy,
+        dailyMediumCount: medium,
+        dailyHardCount: hard,
       });
 
       setCreatedRoomCode(room.code);
@@ -247,6 +308,11 @@ export default function JoinRoom() {
       setListUrl("");
       setCreateMode("topics");
       setSelectedTopics(["Array"]);
+      setDurationType("unlimited");
+      setDurationValue("30");
+      setDailyEasyCount("0");
+      setDailyMediumCount("1");
+      setDailyHardCount("0");
     } catch (error) {
       const message =
         error instanceof Error
@@ -259,6 +325,31 @@ export default function JoinRoom() {
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!requireAuth()) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteRoomForCurrentUser(roomId);
+      setRooms((current) => current.filter((room) => room.id !== roomId));
+      setDeleteConfirmRoomId(null);
+      toast({
+        title: "Room deleted",
+        description: "The room has been deleted successfully.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not delete room.";
+      toast({
+        title: "Delete failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -312,6 +403,13 @@ export default function JoinRoom() {
               onChange={(event) => setRoomName(event.target.value)}
               placeholder="ROOM NAME (OPTIONAL)"
               maxLength={64}
+              className="border-cyan-400/25 bg-black/50 font-mono text-xs"
+            />
+
+            <Input
+              value={leetcodeIdentityInput}
+              onChange={(event) => setLeetcodeIdentityInput(event.target.value)}
+              placeholder="LEETCODE USERNAME OR PROFILE URL (REQUIRED)"
               className="border-cyan-400/25 bg-black/50 font-mono text-xs"
             />
 
@@ -371,6 +469,73 @@ export default function JoinRoom() {
               </div>
             )}
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-mono text-[11px] text-cyan-300 tracking-wider">
+                  DURATION
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {(["days", "months", "unlimited"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setDurationType(option)}
+                      className={`px-2.5 py-1 border font-mono text-[11px] tracking-wide ${
+                        durationType === option
+                          ? "border-cyan-300 text-cyan-200 bg-cyan-500/10"
+                          : "border-white/20 text-muted-foreground"
+                      }`}
+                    >
+                      {option.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {durationType !== "unlimited" && (
+                <div className="space-y-1.5">
+                  <label className="font-mono text-[11px] text-cyan-300 tracking-wider">
+                    DURATION VALUE
+                  </label>
+                  <Input
+                    value={durationValue}
+                    onChange={(event) => setDurationValue(event.target.value)}
+                    inputMode="numeric"
+                    placeholder={durationType === "days" ? "e.g. 30" : "e.g. 2"}
+                    className="border-cyan-400/25 bg-black/50 font-mono text-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="font-mono text-[11px] text-cyan-300 tracking-wider">
+                DAILY DIFFICULTY COUNTS (E/M/H)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                  value={dailyEasyCount}
+                  onChange={(event) => setDailyEasyCount(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Easy"
+                  className="border-cyan-400/25 bg-black/50 font-mono text-xs"
+                />
+                <Input
+                  value={dailyMediumCount}
+                  onChange={(event) => setDailyMediumCount(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Medium"
+                  className="border-cyan-400/25 bg-black/50 font-mono text-xs"
+                />
+                <Input
+                  value={dailyHardCount}
+                  onChange={(event) => setDailyHardCount(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Hard"
+                  className="border-cyan-400/25 bg-black/50 font-mono text-xs"
+                />
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -413,6 +578,12 @@ export default function JoinRoom() {
               placeholder="ENTER 6-CHAR CODE"
               maxLength={6}
               className="font-mono text-center tracking-[0.35em] border-cyan-400/35 bg-black/40"
+            />
+            <Input
+              value={leetcodeIdentityInput}
+              onChange={(event) => setLeetcodeIdentityInput(event.target.value)}
+              placeholder="LEETCODE USERNAME OR PROFILE URL (REQUIRED)"
+              className="font-mono border-cyan-400/35 bg-black/40"
             />
             <NeonButton className="w-full py-3" onClick={handleJoinRoom} glow>
               {isJoining ? "JOINING..." : "OPEN ROOM"}
@@ -478,13 +649,14 @@ export default function JoinRoom() {
                       >
                         OPEN PROBLEMS
                       </NeonButton>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 px-3 py-2 border border-purple-400/30 text-purple-300 text-xs font-mono hover:bg-purple-500/10"
-                        onClick={() => setLocation("/pulse")}
-                      >
-                        <Radio className="h-3.5 w-3.5" /> PULSE
-                      </button>
+                      {room.ownerId === user?.id && (
+                        <button
+                          onClick={() => setDeleteConfirmRoomId(room.id)}
+                          className="px-3 py-2 border border-red-500/50 text-red-400 font-mono text-xs hover:bg-red-500/10 rounded transition-colors"
+                        >
+                          DELETE
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
@@ -498,6 +670,44 @@ export default function JoinRoom() {
           </div>
         </motion.section>
       </div>
+
+      <Dialog
+        open={!!deleteConfirmRoomId}
+        onOpenChange={(open) => !open && setDeleteConfirmRoomId(null)}
+      >
+        <DialogContent className="max-w-sm border-red-400/30 bg-black/85 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-red-400 tracking-widest">
+              DELETE ROOM
+            </DialogTitle>
+            <DialogDescription className="font-mono text-xs">
+              This action cannot be undone. The room and all associated data
+              will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              className="px-3 py-2 border border-white/20 text-muted-foreground font-mono text-xs hover:bg-white/5"
+              onClick={() => setDeleteConfirmRoomId(null)}
+              disabled={isDeleting}
+            >
+              CANCEL
+            </button>
+            <button
+              type="button"
+              className="px-3 py-2 border border-red-500/50 bg-red-500/10 text-red-400 font-mono text-xs hover:bg-red-500/20 disabled:opacity-50"
+              onClick={() =>
+                deleteConfirmRoomId && handleDeleteRoom(deleteConfirmRoomId)
+              }
+              disabled={isDeleting}
+            >
+              {isDeleting ? "DELETING..." : "DELETE ROOM"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

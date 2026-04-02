@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "wouter";
 import { Layers3, Search, Terminal } from "lucide-react";
 import {
   useRoomProblemGroups,
@@ -94,16 +93,25 @@ function ProblemCard({
         </div>
 
         <div className="relative z-10 flex justify-between items-center border-t border-border/30 pt-4">
-          <div className="font-mono text-xs text-muted-foreground">
-            Acceptance:{" "}
-            <span className="text-white">{problem.acceptance}%</span>
+          <div className="font-mono text-xs text-muted-foreground space-y-1">
+            <div>
+              Points: <span className="text-white">{problem.points ?? 0}</span>
+            </div>
+            <div>
+              Status:{" "}
+              <span
+                className={problem.completed ? "text-green-400" : "text-white"}
+              >
+                {problem.completed ? "Completed" : "Pending"}
+              </span>
+            </div>
           </div>
           <motion.div
             className="font-mono text-xs flex items-center gap-1"
             style={{ color: glowColor }}
             whileHover={{ x: 4 }}
           >
-            HACK <span className="text-base leading-none">→</span>
+            OPEN LEETCODE <span className="text-base leading-none">↗</span>
           </motion.div>
         </div>
       </Tilt3DCard>
@@ -115,7 +123,6 @@ export default function Problems() {
   const { data: roomGroups, isLoading } = useRoomProblemGroups();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Difficulty | "ALL">("ALL");
-  const [, setLocation] = useLocation();
 
   const filteredGroups = roomGroups
     .map((group) => ({
@@ -226,7 +233,14 @@ export default function Problems() {
                       key={`${group.roomId}-${problem.id}`}
                       problem={problem}
                       idx={idx}
-                      onClick={() => setLocation(`/arena/${problem.id}`)}
+                      onClick={() => {
+                        window.open(
+                          problem.url ||
+                            `https://leetcode.com/problems/${problem.slug}/`,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }}
                     />
                   ))}
                 </AnimatePresence>
