@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ArenaRoom } from "@/hooks/use-arena-data";
+import { hasCompletedProfileForUser } from "@/lib/profile-service";
 
 export type RoomSourceType = "manual" | "list_url" | "topics";
 export type RoomDurationType = "days" | "months" | "unlimited";
@@ -17,12 +18,10 @@ export interface CreateRoomInput {
   dailyHardCount?: number;
   assignmentTimezone?: string;
   assignmentTimeUtc?: string;
-  leetcodeIdentityInput?: string;
 }
 
 export interface JoinRoomInput {
   code: string;
-  leetcodeIdentityInput?: string;
 }
 
 interface RoomRow {
@@ -42,7 +41,6 @@ interface RoomMembershipRow {
 const JOINED_ROOMS_CACHE_KEY = "lc_arena_joined_rooms_cache_v1";
 
 const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
-const LEETCODE_USERNAME_REGEX = /^[A-Za-z0-9_-]{2,30}$/;
 
 function buildDefaultRoomName() {
   return `Arena ${new Date().toISOString().slice(0, 10)}`;
@@ -92,82 +90,6 @@ export function extractLeetCodeListSlug(listUrl: string) {
   throw new Error("Could not parse list slug from URL.");
 }
 
-function normalizeLeetCodeUsername(username: string) {
-  return username.trim();
-}
-
-function validateLeetCodeUsername(username: string) {
-  return LEETCODE_USERNAME_REGEX.test(username);
-}
-
-export function extractLeetCodeUsernameFromProfileUrl(profileUrl: string) {
-  let parsed: URL;
-  try {
-    parsed = new URL(profileUrl);
-  } catch {
-    throw new Error("Invalid LeetCode profile URL format.");
-  }
-
-  if (!parsed.hostname.toLowerCase().includes("leetcode.com")) {
-    throw new Error("Only leetcode.com profile URLs are supported.");
-  }
-
-  const segments = parsed.pathname.split("/").filter(Boolean);
-  if (segments.length === 0) {
-    throw new Error("Could not parse username from profile URL.");
-  }
-
-  let username = segments[0];
-  if ((segments[0] === "u" || segments[0] === "profile") && segments[1]) {
-    username = segments[1];
-  }
-
-  username = username.replace(/^@/, "").trim();
-  if (!validateLeetCodeUsername(username)) {
-    throw new Error("LeetCode username in profile URL is invalid.");
-  }
-
-  return username;
-}
-
-function looksLikeUrl(value: string) {
-  const normalized = value.toLowerCase();
-  return (
-    normalized.includes("://") ||
-    normalized.startsWith("www.") ||
-    normalized.includes("leetcode.com")
-  );
-}
-
-function normalizePotentialProfileUrl(value: string) {
-  if (/^https?:\/\//i.test(value)) {
-    return value;
-  }
-  return `https://${value}`;
-}
-
-function resolveLeetCodeIdentity(leetcodeIdentityInput?: string) {
-  const rawIdentity = leetcodeIdentityInput?.trim() ?? "";
-
-  if (!rawIdentity) {
-    throw new Error(
-      "LeetCode username or profile URL is required to participate in a room.",
-    );
-  }
-
-  if (looksLikeUrl(rawIdentity)) {
-    const profileUrl = normalizePotentialProfileUrl(rawIdentity);
-    const username = extractLeetCodeUsernameFromProfileUrl(profileUrl);
-    return { username, profileUrl: `https://leetcode.com/u/${username}/` };
-  }
-
-  const username = normalizeLeetCodeUsername(rawIdentity);
-  if (!validateLeetCodeUsername(username)) {
-    throw new Error("Invalid LeetCode username.");
-  }
-
-  return { username, profileUrl: `https://leetcode.com/u/${username}/` };
-}
 
 function computeRoomWindow(durationType: RoomDurationType, durationValue?: number | null) {
   const startsAt = new Date();
@@ -194,40 +116,12 @@ function computeRoomWindow(durationType: RoomDurationType, durationValue?: numbe
   };
 }
 
-async function upsertLeetCodeProfileForCurrentUser(
-  userId: string,
-  identity: { username: string; profileUrl: string },
-) {
-  const { error } = await supabase.from("user_leetcode_profiles").upsert(
-    {
-      user_id: userId,
-      username: identity.username,
-      profile_url: identity.profileUrl,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
+async function ensureProfileCompleted(userId: string) {
+  const profileCompleted = await hasCompletedProfileForUser(userId).catch(
+    () => false,
   );
-
-  if (error) {
-    const isDuplicateUsernameConflict =
-      error.code === "23505" &&
-      typeof error.message === "string" &&
-      error.message.toLowerCase().includes("username");
-
-    if (isDuplicateUsernameConflict) {
-      console.warn(
-        "Skipped saving LeetCode profile because the username is already linked to another account.",
-        {
-          userId,
-          username: identity.username,
-          message: error.message,
-          details: error.details,
-        },
-      );
-      return;
-    }
-
-    throw error;
+  if (!profileCompleted) {
+    throw new Error("Complete your profile before creating or joining rooms.");
   }
 }
 
@@ -391,6 +285,7 @@ async function lookupRoomByCodeForJoin(code: string) {
 
 export async function createRoomForCurrentUser(input: CreateRoomInput) {
   const ownerId = await getCurrentUserId();
+  await ensureProfileCompleted(ownerId);
   const sourceType = input.sourceType;
 
   if (sourceType === "list_url" && !input.listUrl?.trim()) {
@@ -418,9 +313,6 @@ export async function createRoomForCurrentUser(input: CreateRoomInput) {
   if (dailyEasyCount + dailyMediumCount + dailyHardCount <= 0) {
     throw new Error("Set at least one daily problem across easy/medium/hard.");
   }
-
-  const leetcodeIdentity = resolveLeetCodeIdentity(input.leetcodeIdentityInput);
-  await upsertLeetCodeProfileForCurrentUser(ownerId, leetcodeIdentity);
 
   const room = await createUniqueRoomRecord({
     name: roomName,
@@ -468,27 +360,19 @@ export async function createRoomForCurrentUser(input: CreateRoomInput) {
   return room;
 }
 
-export async function joinRoomByCodeForCurrentUser(rawCode: string) {
-  return joinRoomByCodeForCurrentUserWithProfile({ code: rawCode });
-}
-
-export async function joinRoomByCodeForCurrentUserWithProfile(
-  input: string | JoinRoomInput,
-) {
+export async function joinRoomByCodeForCurrentUser(input: string | JoinRoomInput) {
   const payload =
     typeof input === "string"
       ? ({ code: input } as JoinRoomInput)
       : input;
 
   const userId = await getCurrentUserId();
+  await ensureProfileCompleted(userId);
   const code = normalizeRoomCode(payload.code);
 
   if (!validateRoomCode(code)) {
     throw new Error("Invalid room code.");
   }
-
-  const leetcodeIdentity = resolveLeetCodeIdentity(payload.leetcodeIdentityInput);
-  await upsertLeetCodeProfileForCurrentUser(userId, leetcodeIdentity);
 
   const room = await lookupRoomByCodeForJoin(code);
 

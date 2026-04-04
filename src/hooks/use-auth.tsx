@@ -3,6 +3,30 @@ import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase, supabaseConfigError } from "@/integrations/supabase/client";
+import { hasCompletedProfileForUser } from "@/lib/profile-service";
+
+const JUST_SIGNED_IN_STORAGE_KEY = "arena.profile.justSignedIn";
+
+function markJustSignedIn() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem(JUST_SIGNED_IN_STORAGE_KEY, "true");
+}
+
+function consumeJustSignedInMark() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const marked =
+    window.localStorage.getItem(JUST_SIGNED_IN_STORAGE_KEY) === "true";
+  if (marked) {
+    window.localStorage.removeItem(JUST_SIGNED_IN_STORAGE_KEY);
+  }
+
+  return marked;
+}
 
 type OAuthProvider = "google" | "github" | "discord";
 
@@ -39,16 +63,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!isMounted) return;
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+
+      const nextSession = data.session;
+      if (nextSession?.user) {
+        const allowIncompleteProfileOnce = consumeJustSignedInMark();
+        const hasCompletedProfile = await hasCompletedProfileForUser(
+          nextSession.user.id,
+        ).catch(() => false);
+
+        if (!isMounted) return;
+
+        if (!hasCompletedProfile && !allowIncompleteProfileOnce) {
+          await supabase.auth.signOut();
+          if (!isMounted) return;
+
+          setSession(null);
+          setUser(null);
+          setAuthModalOpen(true);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "INITIAL_SESSION") {
+        return;
+      }
+
+      if (event === "SIGNED_IN") {
+        consumeJustSignedInMark();
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
@@ -72,16 +126,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
+        markJustSignedIn();
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        if (error) {
+          consumeJustSignedInMark();
+        }
         return { error: error?.message ?? null };
       },
       signUpWithEmail: async (email, password, displayName) => {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
+        markJustSignedIn();
         const metadata = displayName
           ? { display_name: displayName }
           : undefined;
@@ -90,18 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
           options: metadata ? { data: metadata } : undefined,
         });
+        if (error) {
+          consumeJustSignedInMark();
+        }
         return { error: error?.message ?? null };
       },
       signInWithOAuth: async (provider) => {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
+        markJustSignedIn();
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {
             redirectTo: `${window.location.origin}/`,
           },
         });
+        if (error) {
+          consumeJustSignedInMark();
+        }
         return { error: error?.message ?? null };
       },
       signOut: async () => {

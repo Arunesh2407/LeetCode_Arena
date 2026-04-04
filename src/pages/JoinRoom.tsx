@@ -17,7 +17,7 @@ import { useJoinedRooms } from "@/hooks/use-arena-data";
 import { useToast } from "@/hooks/use-toast";
 import {
   createRoomForCurrentUser,
-  joinRoomByCodeForCurrentUserWithProfile,
+  joinRoomByCodeForCurrentUser,
   validateRoomCode,
   deleteRoomForCurrentUser,
 } from "@/lib/room-service";
@@ -125,7 +125,6 @@ export default function JoinRoom() {
   const [rooms, setRooms] = useState(joinedRooms);
   const [code, setCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-  const [leetcodeIdentityInput, setLeetcodeIdentityInput] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"topics" | "list_url">("topics");
   const [roomName, setRoomName] = useState("");
@@ -184,10 +183,7 @@ export default function JoinRoom() {
 
     setIsJoining(true);
     try {
-      const room = await joinRoomByCodeForCurrentUserWithProfile({
-        code: normalizedCode,
-        leetcodeIdentityInput,
-      });
+      const room = await joinRoomByCodeForCurrentUser(normalizedCode);
       toast({
         title: "Room linked",
         description: `Connected to ${room.name}.`,
@@ -274,7 +270,6 @@ export default function JoinRoom() {
         sourceType: createMode,
         listUrl: createMode === "list_url" ? listUrl : undefined,
         topics: createMode === "topics" ? selectedTopics : undefined,
-        leetcodeIdentityInput,
         durationType,
         durationValue: durationType === "unlimited" ? null : duration,
         dailyEasyCount: easy,
@@ -405,13 +400,6 @@ export default function JoinRoom() {
               onChange={(event) => setRoomName(event.target.value)}
               placeholder="ROOM NAME (OPTIONAL)"
               maxLength={64}
-              className="border-cyan-400/25 bg-black/50 font-mono text-xs"
-            />
-
-            <Input
-              value={leetcodeIdentityInput}
-              onChange={(event) => setLeetcodeIdentityInput(event.target.value)}
-              placeholder="LEETCODE USERNAME OR PROFILE URL (REQUIRED)"
               className="border-cyan-400/25 bg-black/50 font-mono text-xs"
             />
 
@@ -580,12 +568,6 @@ export default function JoinRoom() {
               placeholder="ENTER 6-CHAR CODE"
               maxLength={6}
               className="font-mono text-center tracking-[0.35em] border-cyan-400/35 bg-black/40"
-            />
-            <Input
-              value={leetcodeIdentityInput}
-              onChange={(event) => setLeetcodeIdentityInput(event.target.value)}
-              placeholder="LEETCODE USERNAME OR PROFILE URL (REQUIRED)"
-              className="font-mono border-cyan-400/35 bg-black/40"
             />
             <NeonButton className="w-full py-3" onClick={handleJoinRoom} glow>
               {isJoining ? "JOINING..." : "OPEN ROOM"}

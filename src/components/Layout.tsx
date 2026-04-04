@@ -17,6 +17,7 @@ import {
 import { useTheme } from "next-themes";
 import { GlobalScene } from "./3d/GlobalScene";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { ProfileCompletionModal } from "@/components/auth/ProfileCompletionModal";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import {
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { hasCompletedProfileForUser } from "@/lib/profile-service";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -61,6 +63,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("arena.config.reducedFx") === "true";
   });
+  const [profileCompletionOpen, setProfileCompletionOpen] = useState(false);
 
   const displayName =
     user?.user_metadata?.display_name?.toString() ||
@@ -82,6 +85,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ? "enabled"
       : "disabled";
   }, [reducedFx]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCompletionGate = async () => {
+      if (!user) {
+        setProfileCompletionOpen(false);
+        return;
+      }
+
+      try {
+        const completed = await hasCompletedProfileForUser(user.id);
+        if (!active) return;
+        setProfileCompletionOpen(!completed);
+      } catch (error) {
+        if (!active) return;
+        console.warn("Could not evaluate profile completion state", error);
+        setProfileCompletionOpen(true);
+      }
+    };
+
+    void loadCompletionGate();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -353,6 +383,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       <AuthModal />
+      {user && (
+        <ProfileCompletionModal
+          userId={user.id}
+          defaultName={user.user_metadata?.display_name?.toString()}
+          open={profileCompletionOpen}
+          onCompleted={() => setProfileCompletionOpen(false)}
+        />
+      )}
     </div>
   );
 }
