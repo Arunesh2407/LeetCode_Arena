@@ -6,6 +6,24 @@ import { GlitchText } from "@/components/ui/GlitchText";
 import { BootSequence } from "@/components/ui/BootSequence";
 import { supabase } from "@/integrations/supabase/client";
 
+const HOME_ACTIVE_SINCE_STORAGE_KEY = "arena.home.activeSinceMs";
+
+function resolveHomeActiveSince() {
+  if (typeof window === "undefined") {
+    return Date.now();
+  }
+
+  const stored = window.localStorage.getItem(HOME_ACTIVE_SINCE_STORAGE_KEY);
+  const parsed = stored ? Number(stored) : Number.NaN;
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+
+  const now = Date.now();
+  window.localStorage.setItem(HOME_ACTIVE_SINCE_STORAGE_KEY, String(now));
+  return now;
+}
+
 function useSmoothedMouse() {
   const mouse = useRef({ x: 0.5, y: 0.5 });
   const smoothed = useRef({ x: 0.5, y: 0.5 });
@@ -358,18 +376,35 @@ export default function Home() {
     let isActive = true;
 
     const loadTotalQuestions = async () => {
-      const { count, error } = await supabase
-        .from("room_problems")
-        .select("*", { count: "exact", head: true });
+      const { data, error } = await supabase.rpc("get_total_problem_count");
 
       if (error) {
-        console.warn("Failed to load total question count", error);
-        if (isActive) setTotalQuestions(0);
+        console.warn(
+          "Failed to load total question count from RPC, trying direct count",
+          error,
+        );
+
+        const { count: fallbackCount, error: fallbackError } = await supabase
+          .from("room_problems")
+          .select("id", { count: "exact", head: true });
+
+        if (fallbackError) {
+          console.warn(
+            "Failed to load total question count with fallback query",
+            fallbackError,
+          );
+          if (isActive) setTotalQuestions(null);
+          return;
+        }
+
+        if (isActive) {
+          setTotalQuestions(fallbackCount ?? 0);
+        }
         return;
       }
 
       if (isActive) {
-        setTotalQuestions(count ?? 0);
+        setTotalQuestions(Number(data ?? 0));
       }
     };
 
@@ -381,7 +416,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const startedAt = Date.now();
+    const startedAt = resolveHomeActiveSince();
+    setActiveSeconds(Math.floor((Date.now() - startedAt) / 1000));
+
     const timer = setInterval(() => {
       setActiveSeconds(Math.floor((Date.now() - startedAt) / 1000));
     }, 1000);
