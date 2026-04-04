@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -12,6 +12,13 @@ function markJustSignedIn() {
     return;
   }
   window.localStorage.setItem(JUST_SIGNED_IN_STORAGE_KEY, "true");
+}
+
+function clearJustSignedInMark() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(JUST_SIGNED_IN_STORAGE_KEY);
 }
 
 function consumeJustSignedInMark() {
@@ -59,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const allowIncompleteProfileThisRuntime = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -68,7 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const nextSession = data.session;
       if (nextSession?.user) {
-        const allowIncompleteProfileOnce = consumeJustSignedInMark();
+        const allowFromStorage = consumeJustSignedInMark();
+        const allowFromRuntime = allowIncompleteProfileThisRuntime.current;
+        allowIncompleteProfileThisRuntime.current = false;
+
+        const allowIncompleteProfileOnce = allowFromStorage || allowFromRuntime;
         const hasCompletedProfile = await hasCompletedProfileForUser(
           nextSession.user.id,
         ).catch(() => false);
@@ -100,7 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === "SIGNED_IN") {
-        consumeJustSignedInMark();
+        // Allow profile completion immediately after a fresh login in this runtime.
+        allowIncompleteProfileThisRuntime.current = true;
+      }
+
+      if (event === "SIGNED_OUT") {
+        allowIncompleteProfileThisRuntime.current = false;
+        clearJustSignedInMark();
       }
 
       setSession(nextSession);
@@ -126,13 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
-        markJustSignedIn();
+
+        // Email/password login does not redirect, so runtime allowance is enough.
+        allowIncompleteProfileThisRuntime.current = true;
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) {
-          consumeJustSignedInMark();
+          allowIncompleteProfileThisRuntime.current = false;
         }
         return { error: error?.message ?? null };
       },
@@ -140,7 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
-        markJustSignedIn();
+
+        // Sign-up may create a session immediately depending on auth configuration.
+        allowIncompleteProfileThisRuntime.current = true;
         const metadata = displayName
           ? { display_name: displayName }
           : undefined;
@@ -150,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: metadata ? { data: metadata } : undefined,
         });
         if (error) {
-          consumeJustSignedInMark();
+          allowIncompleteProfileThisRuntime.current = false;
         }
         return { error: error?.message ?? null };
       },
@@ -158,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
+
+        // OAuth redirects, so keep a one-time persisted marker for first load after redirect.
+        allowIncompleteProfileThisRuntime.current = true;
         markJustSignedIn();
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
@@ -166,7 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         });
         if (error) {
-          consumeJustSignedInMark();
+          allowIncompleteProfileThisRuntime.current = false;
+          clearJustSignedInMark();
         }
         return { error: error?.message ?? null };
       },
@@ -174,6 +200,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabaseConfigError) {
           return { error: supabaseConfigError };
         }
+
+        allowIncompleteProfileThisRuntime.current = false;
+        clearJustSignedInMark();
         const { error } = await supabase.auth.signOut();
         return { error: error?.message ?? null };
       },
