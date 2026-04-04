@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { GlitchText } from "@/components/ui/GlitchText";
 import { BootSequence } from "@/components/ui/BootSequence";
+import { supabase } from "@/integrations/supabase/client";
 
 function useSmoothedMouse() {
   const mouse = useRef({ x: 0.5, y: 0.5 });
@@ -273,14 +274,20 @@ function CounterStat({
   label,
   value,
   suffix = "",
+  animate = true,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   suffix?: string;
+  animate?: boolean;
 }) {
   const [current, setCurrent] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const isAnimatedNumber = typeof value === "number" && animate;
+
   useEffect(() => {
+    if (!isAnimatedNumber) return;
+
     const obs = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -298,14 +305,19 @@ function CounterStat({
     );
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
-  }, [value]);
+  }, [isAnimatedNumber, value]);
+
+  const displayValue = isAnimatedNumber
+    ? current.toLocaleString()
+    : String(value);
+
   return (
     <div ref={ref} className="text-center">
       <div
         className="text-3xl md:text-4xl font-bold animate-corrupt"
         style={{ color: "#00fff7", textShadow: "0 0 15px rgba(0,255,247,0.7)" }}
       >
-        {current.toLocaleString()}
+        {displayValue}
         {suffix}
       </div>
       <div className="text-xs font-mono text-muted-foreground mt-1 tracking-widest">
@@ -321,6 +333,8 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollDim, setScrollDim] = useState(0);
   const [scrollBlur, setScrollBlur] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
+  const [activeSeconds, setActiveSeconds] = useState(0);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -338,6 +352,41 @@ export default function Home() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadTotalQuestions = async () => {
+      const { count, error } = await supabase
+        .from("room_problems")
+        .select("*", { count: "exact", head: true });
+
+      if (error) {
+        console.warn("Failed to load total question count", error);
+        if (isActive) setTotalQuestions(0);
+        return;
+      }
+
+      if (isActive) {
+        setTotalQuestions(count ?? 0);
+      }
+    };
+
+    loadTotalQuestions();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      setActiveSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const dx = mouse.x - 0.5,
@@ -669,9 +718,22 @@ export default function Home() {
               <HUDCorner position="tr" />
               <HUDCorner position="bl" />
               <HUDCorner position="br" />
-              <CounterStat label="ACTIVE NODES" value={42318} />
-              <CounterStat label="PROBLEMS SOLVED" value={1847293} />
-              <CounterStat label="ARENA MATCHES" value={9820} suffix="+" />
+              <CounterStat
+                label="TOTAL NUMBER OF QUESTIONS"
+                value={totalQuestions ?? "..."}
+                animate={totalQuestions !== null}
+              />
+              <CounterStat
+                label="DEVELOPED BY"
+                value="Arunesh Geda"
+                animate={false}
+              />
+              <CounterStat
+                label="ACTIVE FROM (TIME IN SECONDS)"
+                value={activeSeconds}
+                suffix=" s"
+                animate={false}
+              />
             </div>
           </motion.div>
 
