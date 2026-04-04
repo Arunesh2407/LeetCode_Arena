@@ -206,6 +206,7 @@ export default function JoinRoom() {
             memberCount: 1,
             status: room.status,
             joinedAt: new Date().toISOString(),
+            ownerId: (room as { owner_id?: string }).owner_id,
           },
           ...current,
         ];
@@ -291,6 +292,7 @@ export default function JoinRoom() {
           memberCount: 1,
           status: "ACTIVE",
           joinedAt: new Date().toISOString(),
+          ownerId: user?.id,
         },
         ...current.filter((item) => item.id !== room.id),
       ]);

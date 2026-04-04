@@ -77,6 +77,7 @@ export interface RoomProblemGroup {
   roomId: string;
   roomName: string;
   roomCode: string;
+  roomOwnerId?: string;
   problems: Problem[];
 }
 
@@ -291,6 +292,7 @@ export function useRoomProblemGroups() {
           roomId: room.id,
           roomName: room.name,
           roomCode: room.code,
+          roomOwnerId: room.ownerId,
           problems: [],
         }));
 
@@ -299,9 +301,11 @@ export function useRoomProblemGroups() {
           return;
         }
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.warn("Failed to resolve user for room problem groups", authError);
+        }
+        const user = authData?.user ?? null;
 
         const today = new Date().toISOString().slice(0, 10);
         const roomIds = rooms.map((room) => room.id);

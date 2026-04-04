@@ -251,17 +251,35 @@ async function triggerRoomSync(roomId: string) {
   }
 }
 
-async function getCurrentUserId() {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+async function getCurrentUserIdOrNull() {
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-  if (error || !user) {
+    if (error) {
+      console.warn("Failed to resolve current user", {
+        message: error.message,
+        code: error.code,
+      });
+      return null;
+    }
+
+    return user?.id ?? null;
+  } catch (error) {
+    console.warn("Unexpected error while resolving current user", error);
+    return null;
+  }
+}
+
+async function getCurrentUserId() {
+  const userId = await getCurrentUserIdOrNull();
+  if (!userId) {
     throw new Error("You must be signed in.");
   }
 
-  return user.id;
+  return userId;
 }
 
 function mapToArenaRoom(row: RoomMembershipRow, memberCount = 1): ArenaRoom {
@@ -441,6 +459,7 @@ export async function createRoomForCurrentUser(input: CreateRoomInput) {
     memberCount: 1,
     status: "ACTIVE",
     joinedAt: new Date().toISOString(),
+    ownerId,
   });
 
   // Best effort: seed room pool/assignments so Problems page is not empty.
@@ -495,6 +514,7 @@ export async function joinRoomByCodeForCurrentUserWithProfile(
     memberCount: 1,
     status: room.status,
     joinedAt: new Date().toISOString(),
+    ownerId: room.owner_id,
   });
 
   // Best effort: refresh assignments once a member joins.
@@ -504,8 +524,12 @@ export async function joinRoomByCodeForCurrentUserWithProfile(
 }
 
 export async function getJoinedRoomsForCurrentUser() {
-  const userId = await getCurrentUserId();
   const cachedRooms = readCachedJoinedRooms();
+  const userId = await getCurrentUserIdOrNull();
+
+  if (!userId) {
+    return cachedRooms;
+  }
 
   // Step 1: Get room IDs the user is a member of
   const { data: membershipData, error: membershipError } = await supabase

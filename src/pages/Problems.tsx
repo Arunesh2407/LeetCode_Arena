@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers3, Search, Terminal } from "lucide-react";
+import { Eye, EyeOff, Layers3, Search, Terminal, Trash2 } from "lucide-react";
 import {
   useRoomProblemGroups,
   Difficulty,
@@ -8,6 +8,16 @@ import {
 } from "@/hooks/use-arena-data";
 import { CyberBadge } from "@/components/ui/CyberBadge";
 import { Tilt3DCard } from "@/components/ui/Tilt3DCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { deleteRoomForCurrentUser } from "@/lib/room-service";
 
 const DIFF_GLOW: Record<string, string> = {
   EASY: "#22c55e",
@@ -65,10 +75,7 @@ function ProblemCard({
           }}
         />
 
-        <div className="relative z-10 flex justify-between items-start mb-4">
-          <span className="font-mono text-muted-foreground text-sm">
-            #{problem.id.padStart(4, "0")}
-          </span>
+        <div className="relative z-10 flex justify-end items-start mb-4">
           <CyberBadge difficulty={problem.difficulty} />
         </div>
 
@@ -120,9 +127,15 @@ function ProblemCard({
 }
 
 export default function Problems() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { data: roomGroups, isLoading } = useRoomProblemGroups();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Difficulty | "ALL">("ALL");
+  const [revealedCodes, setRevealedCodes] = useState<Record<string, boolean>>({});
+  const [deleteConfirmRoomId, setDeleteConfirmRoomId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [removedRoomIds, setRemovedRoomIds] = useState<Set<string>>(new Set());
 
   const filteredGroups = roomGroups
     .map((group) => ({
@@ -138,6 +151,46 @@ export default function Problems() {
       }),
     }))
     .filter((group) => group.problems.length > 0);
+
+  const visibleGroups = useMemo(
+    () => filteredGroups.filter((group) => !removedRoomIds.has(group.roomId)),
+    [filteredGroups, removedRoomIds],
+  );
+
+  const deletingGroup = roomGroups.find((group) => group.roomId === deleteConfirmRoomId);
+
+  const toggleCodeVisibility = (roomId: string) => {
+    setRevealedCodes((current) => ({
+      ...current,
+      [roomId]: !current[roomId],
+    }));
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteRoomForCurrentUser(roomId);
+      setRemovedRoomIds((current) => {
+        const next = new Set(current);
+        next.add(roomId);
+        return next;
+      });
+      setDeleteConfirmRoomId(null);
+      toast({
+        title: "Room deleted",
+        description: "The room and related data were removed.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not delete room.";
+      toast({
+        title: "Delete failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -198,7 +251,7 @@ export default function Problems() {
         </div>
       ) : (
         <div className="space-y-10" style={{ perspective: "1200px" }}>
-          {filteredGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <motion.section
               key={group.roomId}
               initial={{ opacity: 0, y: 14 }}
@@ -217,9 +270,35 @@ export default function Problems() {
                     {group.roomName}
                   </h2>
                   <p className="font-mono text-xs text-muted-foreground mt-1">
-                    Room Code: {group.roomCode} • Active problems:{" "}
+                    Room Code: {revealedCodes[group.roomId] ? group.roomCode : "*".repeat(group.roomCode.length || 6)} • Active problems:{" "}
                     {group.problems.length}
                   </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleCodeVisibility(group.roomId)}
+                    className="px-3 py-2 border border-cyan-400/35 text-cyan-200 font-mono text-xs hover:bg-cyan-500/10 rounded transition-colors inline-flex items-center gap-1"
+                  >
+                    {revealedCodes[group.roomId] ? (
+                      <>
+                        <EyeOff className="h-3.5 w-3.5" /> HIDE CODE
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-3.5 w-3.5" /> VIEW CODE
+                      </>
+                    )}
+                  </button>
+                  {group.roomOwnerId === user?.id && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmRoomId(group.roomId)}
+                      className="px-3 py-2 border border-red-500/50 text-red-400 font-mono text-xs hover:bg-red-500/10 rounded transition-colors inline-flex items-center gap-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> DELETE
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -230,7 +309,7 @@ export default function Problems() {
                 <AnimatePresence>
                   {group.problems.map((problem, idx) => (
                     <ProblemCard
-                      key={`${group.roomId}-${problem.id}`}
+                      key={`${group.roomId}-${problem.slug}`}
                       problem={problem}
                       idx={idx}
                       onClick={() => {
@@ -250,11 +329,48 @@ export default function Problems() {
         </div>
       )}
 
-      {!isLoading && filteredGroups.length === 0 && (
+      {!isLoading && visibleGroups.length === 0 && (
         <div className="text-center py-20 font-mono text-muted-foreground border-2 border-dashed border-border/50 p-8">
           [ERR 404] NO ROOM PROBLEMS FOUND MATCHING QUERY
         </div>
       )}
+
+      <Dialog
+        open={!!deleteConfirmRoomId}
+        onOpenChange={(open) => !open && setDeleteConfirmRoomId(null)}
+      >
+        <DialogContent className="max-w-sm border-red-400/30 bg-black/85 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-red-400 tracking-widest">
+              DELETE ROOM
+            </DialogTitle>
+            <DialogDescription className="font-mono text-xs">
+              This action cannot be undone. {deletingGroup?.roomName ?? "This room"} and all associated data will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              className="px-3 py-2 border border-white/20 text-muted-foreground font-mono text-xs hover:bg-white/5"
+              onClick={() => setDeleteConfirmRoomId(null)}
+              disabled={isDeleting}
+            >
+              CANCEL
+            </button>
+            <button
+              type="button"
+              className="px-3 py-2 border border-red-500/50 bg-red-500/10 text-red-400 font-mono text-xs hover:bg-red-500/20 disabled:opacity-50"
+              onClick={() =>
+                deleteConfirmRoomId && handleDeleteRoom(deleteConfirmRoomId)
+              }
+              disabled={isDeleting}
+            >
+              {isDeleting ? "DELETING..." : "DELETE ROOM"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

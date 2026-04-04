@@ -85,7 +85,7 @@ export default function Arena() {
         <div className="p-6 flex-1 space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              {problem.id}. {problem.title}
+              {problem.title}
             </h1>
             <div className="flex gap-2 flex-wrap mb-4">
               {problem.tags.map((tag) => (
