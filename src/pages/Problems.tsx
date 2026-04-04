@@ -132,8 +132,12 @@ export default function Problems() {
   const { data: roomGroups, isLoading } = useRoomProblemGroups();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Difficulty | "ALL">("ALL");
-  const [revealedCodes, setRevealedCodes] = useState<Record<string, boolean>>({});
-  const [deleteConfirmRoomId, setDeleteConfirmRoomId] = useState<string | null>(null);
+  const [revealedCodes, setRevealedCodes] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [deleteConfirmRoomId, setDeleteConfirmRoomId] = useState<string | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [removedRoomIds, setRemovedRoomIds] = useState<Set<string>>(new Set());
 
@@ -157,7 +161,9 @@ export default function Problems() {
     [filteredGroups, removedRoomIds],
   );
 
-  const deletingGroup = roomGroups.find((group) => group.roomId === deleteConfirmRoomId);
+  const deletingGroup = roomGroups.find(
+    (group) => group.roomId === deleteConfirmRoomId,
+  );
 
   const toggleCodeVisibility = (roomId: string) => {
     setRevealedCodes((current) => ({
@@ -181,7 +187,8 @@ export default function Problems() {
         description: "The room and related data were removed.",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not delete room.";
+      const message =
+        error instanceof Error ? error.message : "Could not delete room.";
       toast({
         title: "Delete failed",
         description: message,
@@ -270,8 +277,11 @@ export default function Problems() {
                     {group.roomName}
                   </h2>
                   <p className="font-mono text-xs text-muted-foreground mt-1">
-                    Room Code: {revealedCodes[group.roomId] ? group.roomCode : "*".repeat(group.roomCode.length || 6)} • Active problems:{" "}
-                    {group.problems.length}
+                    Room Code:{" "}
+                    {revealedCodes[group.roomId]
+                      ? group.roomCode
+                      : "*".repeat(group.roomCode.length || 6)}{" "}
+                    • Active problems: {group.problems.length}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -345,7 +355,9 @@ export default function Problems() {
               DELETE ROOM
             </DialogTitle>
             <DialogDescription className="font-mono text-xs">
-              This action cannot be undone. {deletingGroup?.roomName ?? "This room"} and all associated data will be permanently deleted.
+              This action cannot be undone.{" "}
+              {deletingGroup?.roomName ?? "This room"} and all associated data
+              will be permanently deleted.
             </DialogDescription>
           </DialogHeader>
 
