@@ -375,36 +375,72 @@ export default function Home() {
   useEffect(() => {
     let isActive = true;
 
+    const loadLeetCodeTotalFromFunction = async () => {
+      const { data, error } = await supabase.functions.invoke("leetcode-importer", {
+        body: { mode: "total-count" },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const total = Number((data as { totalQuestions?: unknown } | null)?.totalQuestions);
+      if (!Number.isFinite(total) || total <= 0) {
+        throw new Error("Invalid total question count returned from edge function.");
+      }
+
+      return Math.floor(total);
+    };
+
     const loadTotalQuestions = async () => {
       const { data, error } = await supabase.rpc("get_total_problem_count");
+
+      if (!error) {
+        const rpcTotal = Number(data ?? 0);
+        if (Number.isFinite(rpcTotal) && rpcTotal > 0) {
+          if (isActive) {
+            setTotalQuestions(Math.floor(rpcTotal));
+          }
+          return;
+        }
+      }
 
       if (error) {
         console.warn(
           "Failed to load total question count from RPC, trying direct count",
           error,
         );
+      }
 
-        const { count: fallbackCount, error: fallbackError } = await supabase
-          .from("room_problems")
-          .select("id", { count: "exact", head: true });
+      const { count: fallbackCount, error: fallbackError } = await supabase
+        .from("room_problems")
+        .select("id", { count: "exact", head: true });
 
-        if (fallbackError) {
-          console.warn(
-            "Failed to load total question count with fallback query",
-            fallbackError,
-          );
-          if (isActive) setTotalQuestions(null);
-          return;
-        }
-
+      if (fallbackError) {
+        console.warn(
+          "Failed to load total question count with fallback query",
+          fallbackError,
+        );
+      } else if ((fallbackCount ?? 0) > 0) {
         if (isActive) {
           setTotalQuestions(fallbackCount ?? 0);
         }
         return;
       }
 
-      if (isActive) {
-        setTotalQuestions(Number(data ?? 0));
+      try {
+        const publicTotal = await loadLeetCodeTotalFromFunction();
+        if (isActive) {
+          setTotalQuestions(publicTotal);
+        }
+      } catch (functionError) {
+        console.warn(
+          "Failed to load public total question count from edge function",
+          functionError,
+        );
+        if (isActive) {
+          setTotalQuestions(null);
+        }
       }
     };
 

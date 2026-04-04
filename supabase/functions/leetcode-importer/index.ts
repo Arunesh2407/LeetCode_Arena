@@ -228,6 +228,27 @@ async function fetchRecentAcceptedSlugs(username: string, limit = 200) {
   }));
 }
 
+async function fetchLeetCodeTotalQuestionCount() {
+  const response = await fetch("https://leetcode.com/api/problems/all/", {
+    headers: {
+      "user-agent": "Mozilla/5.0",
+      referer: "https://leetcode.com/problemset/",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`LeetCode total-count fetch failed with status ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const total = Number(payload?.num_total ?? Number.NaN);
+  if (!Number.isFinite(total) || total <= 0) {
+    throw new Error("LeetCode total-count response did not include a valid num_total.");
+  }
+
+  return Math.floor(total);
+}
+
 function isRoomActive(room: RoomRow) {
   if (room.status !== "ACTIVE") return false;
   if (!room.ends_at) return true;
@@ -563,6 +584,17 @@ Deno.serve(async (req) => {
     const assignDate = body?.assignDate
       ? String(body.assignDate)
       : new Date().toISOString().slice(0, 10);
+
+    if (mode === "total-count") {
+      const totalQuestions = await fetchLeetCodeTotalQuestionCount();
+      return new Response(JSON.stringify({ mode, totalQuestions }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      });
+    }
 
     const roomsQuery = supabase
       .from("rooms")
