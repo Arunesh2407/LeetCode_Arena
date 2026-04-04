@@ -477,16 +477,14 @@ export async function joinRoomByCodeForCurrentUserWithProfile(
     throw new Error("This room is locked.");
   }
 
-  const { error: joinError } = await supabase.from("room_members").upsert(
-    {
-      room_id: room.id,
-      user_id: userId,
-      role: "MEMBER",
-    },
-    { onConflict: "room_id,user_id" },
-  );
+  const { error: joinError } = await supabase.from("room_members").insert({
+    room_id: room.id,
+    user_id: userId,
+    role: "MEMBER",
+  });
 
-  if (joinError) {
+  // If the user already joined earlier, unique violation is expected and safe to ignore.
+  if (joinError && joinError.code !== "23505") {
     throw joinError;
   }
 
